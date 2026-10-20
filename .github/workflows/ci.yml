@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Modern GCC 13
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-13 cmake
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++-13
+
+      - name: Build Project
+        run: cmake --build build --config Release -j $(nproc)
+
+      - name: Run CTest Test Suite
+        run: |
+          cd build
+          ctest --output-on-failure -V
+
+      - name: Run Benchmark
+        run: ./build/orderbook_benchmark
